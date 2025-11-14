@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrera F1 Start</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the lights */
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 10px #ef4444; }
+            50% { box-shadow: 0 0 40px #ef4444; }
+        }
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 10px #22c55e; }
+            50% { box-shadow: 0 0 40px #22c55e; }
+        }
+
+        .light {
+            /* Base appearance */
+            background-color: #1a1a1a; /* Dark, unlit bulb */
+            border: 4px solid #333;
+            transition: all 0.2s ease-in-out;
+            /* FIX: Use rounded-full for perfect circles */
+            border-radius: 9999px; 
+        }
+        
+        .light.red-on {
+            background-color: #ef4444; /* red-500 */
+            border-color: #fca5a5; /* red-300 */
+            box-shadow: 0 0 20px #ef4444;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        .light.green-on {
+            background-color: #22c55e; /* green-500 */
+            border-color: #86efac; /* green-300 */
+            box-shadow: 0 0 20px #22c55e;
+            animation: pulse-green 1.5s infinite;
+        }
+    </style>
+</head>
+<!-- FIX: Use h-svh (small viewport height) and flex to fill the screen -->
+<body class="bg-gray-900 text-gray-100 font-sans h-svh flex flex-col">
+
+    <div class="max-w-6xl mx-auto flex flex-col gap-6 p-4 md:p-8 w-full flex-grow">
+        
+        <!-- Header -->
+        <div class="flex-shrink-0 flex justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+            <h1 class="text-2xl md:text-4xl font-bold text-white">Carrera F1 Race Control</h1>
+            <div id="status-bar" class="flex items-center gap-2 text-sm">
+                <div id="status-light" class="w-3 h-3 rounded-full bg-red-500"></div>
+                <span id="status-text">Connecting...</span>
+            </div>
+        </div>
+
+        <!-- Main Dashboard: 16:9 Aspect Ratio Container -->
+        <!-- FIX: Added flex-grow to this container to make it fill the remaining space -->
+        <div class="aspect-[16/9] w-full bg-gray-800 rounded-lg shadow-2xl p-6 md:p-8 flex flex-col justify-between flex-grow">
+            
+            <!-- Top Section: Lights -->
+            <!-- FIX: Removed 'flex-grow' from this div. This was the bug pushing the button off-screen. -->
+            <div>
+                <!-- Start Lights -->
+                <!-- FIX: Gave lights explicit, responsive w/h and rounded-full -->
+                <div class="max-w-2xl mx-auto flex justify-center gap-4 md:gap-8">
+                    <div id="light-1" class="light w-12 h-12 md:w-24 md:h-24"></div>
+                    <div id="light-2" class="light w-12 h-12 md:w-24 md:h-24"></div>
+                    <div id="light-3" class="light w-12 h-12 md:w-24 md:h-24"></div>
+                    <div id="light-4" class="light w-12 h-12 md:w-24 md:h-24"></div>
+                    <div id="light-5" class="light w-12 h-12 md:w-24 md:h-24"></div>
+                </div>
+                <!-- Green Light (hidden until GO) -->
+                <div class="max-w-xs mx-auto mt-8">
+                     <div id="light-green" class="light hidden w-24 h-24 md:w-32 md:h-32"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Section: Timers & Control -->
+            <div class="flex-shrink-0">
+                <!-- Timers -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8">
+                    
+                    <!-- Track 1 Timer -->
+                    <div class="bg-gray-900 p-6 rounded-lg text-center shadow-inner">
+                        <h2 class="text-xl md:text-3xl font-semibold text-blue-300 mb-4">Track 1</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h3 class="text-lg md:text-xl text-gray-400">Last Lap</h3>
+                                <div id="last-lap-1" class="text-2xl md:text-4xl font-mono font-bold text-blue-100/70">
+                                    --.---<span class="text-xl">s</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg md:text-xl text-gray-400">Current Lap</h3>
+                                <div id="current-lap-1" class="text-2xl md:text-4xl font-mono font-bold text-blue-100">
+                                    0.000<span class="text-xl">s</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Track 2 Timer -->
+                    <div class="bg-gray-900 p-6 rounded-lg text-center shadow-inner">
+                        <h2 class="text-xl md:text-3xl font-semibold text-green-300 mb-4">Track 2</h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h3 class="text-lg md:text-xl text-gray-400">Last Lap</h3>
+                                <div id="last-lap-2" class="text-2xl md:text-4xl font-mono font-bold text-green-100/70">
+                                    --.---<span class="text-xl">s</span>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg md:text-xl text-gray-400">Current Lap</h3>
+                                <div id="current-lap-2" class="text-2xl md:text-4xl font-mono font-bold text-green-100">
+                                    0.000<span class="text-xl">s</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Button -->
+                <div class="text-center">
+                    <button id="start-button" class="bg-red-600 hover:bg-red-500 disabled:bg-gray-500 text-white font-bold py-4 px-10 text-2xl rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                        START RACE
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const statusLight = document.getElementById('status-light');
+        const statusText = document.getElementById('status-text');
+        const startButton = document.getElementById('start-button');
+        const lightsRed = [
+            document.getElementById('light-1'),
+            document.getElementById('light-2'),
+            document.getElementById('light-3'),
+            document.getElementById('light-4'),
+            document.getElementById('light-5'),
+        ];
+        const lightGreen = document.getElementById('light-green');
+        
+        // Timers
+        const lastLap1 = document.getElementById('last-lap-1');
+        const currentLap1 = document.getElementById('current-lap-1');
+        const lastLap2 = document.getElementById('last-lap-2');
+        const currentLap2 = document.getElementById('current-lap-2');
+        
+        // --- State ---
+        let ws;
+        let jsLapStartTime_1 = 0;
+        let jsLapStartTime_2 = 0;
+        let animationFrameId = null;
+
+        // --- Helper Functions ---
+        function formatTime(milliseconds) {
+            const totalSeconds = milliseconds / 1000;
+            return `${totalSeconds.toFixed(3)}<span class="text-xl">s</span>`;
+        }
+
+        // --- Live Timer Loop ---
+        function updateTimers() {
+            const now = performance.now();
+            
+            // Update Track 1
+            if (jsLapStartTime_1 > 0) {
+                const elapsed = now - jsLapStartTime_1;
+                currentLap1.innerHTML = formatTime(elapsed);
+            }
+            // Update Track 2
+            if (jsLapStartTime_2 > 0) {
+                const elapsed = now - jsLapStartTime_2;
+                currentLap2.innerHTML = formatTime(elapsed);
+            }
+            
+            // Continue the loop
+            animationFrameId = requestAnimationFrame(updateTimers);
+        }
+
+        function stopTimerLoop() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+        }
+
+        // --- WebSocket ---
+        function connectWebSocket() {
+            const wsUrl = `ws://${window.location.host}/ws`;
+            console.log(`Connecting to WebSocket at: ${wsUrl}`);
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                statusLight.className = 'w-3 h-3 rounded-full bg-green-500';
+                statusText.innerText = 'Connected';
+                startButton.disabled = false;
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected. Reconnecting in 3s...');
+                statusLight.className = 'w-3 h-3 rounded-full bg-red-500';
+                statusText.innerText = 'Disconnected. Retrying...';
+                startButton.disabled = true;
+                stopTimerLoop();
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onerror = (err) => {
+                console.error('WebSocket error:', err);
+                statusText.innerText = 'Connection Error';
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('Received:', data);
+
+                switch (data.type) {
+                    case 'reset':
+                        resetUI();
+                        break;
+                    
+                    case 'light':
+                        if (data.light_id > 0 && data.light_id <= 5) {
+                            lightsRed[data.light_id - 1].className = data.state === 'on' ? 'light red-on w-12 h-12 md:w-24 md:h-24' : 'light w-12 h-12 md:w-24 md:h-24';
+                        }
+                        break;
+                        
+                    case 'lights_out':
+                        lightsRed.forEach(el => el.className = 'light w-12 h-12 md:w-24 md:h-24'); // All red off
+                        lightGreen.className = 'light green-on w-24 h-24 md:w-32 md:h-32'; // Green on
+                        break;
+                        
+                    case 'start_race':
+                        // Backend has started its clock. We start our visual clock.
+                        const now = performance.now();
+                        jsLapStartTime_1 = now;
+                        jsLapStartTime_2 = now;
+                        
+                        // Clear old lap times
+                        lastLap1.innerHTML = '--.---<span class="text-xl">s</span>';
+                        lastLap2.innerHTML = '--.---<span class="text-xl">s</span>';
+                        
+                        // Start the animation loop
+                        stopTimerLoop(); // Stop any previous loop
+                        updateTimers();
+                        break;
+                        
+                    case 'lap_finish':
+                        // Backend sends the authoritative lap time
+                        const formattedTime = formatTime(data.lap_time_sec * 1000);
+                        
+                        if (data.track === 1) {
+                            lastLap1.innerHTML = formattedTime;
+                            jsLapStartTime_1 = performance.now(); // Reset for next lap
+                        } else if (data.track === 2) {
+                            lastLap2.innerHTML = formattedTime;
+                            jsLapStartTime_2 = performance.now(); // Reset for next lap
+                        }
+                        break;
+
+                    case 'status':
+                        statusText.innerText = data.message;
+                        statusLight.className = 'w-3 h-3 rounded-full bg-yellow-500';
+                        break;
+                }
+            };
+        }
+        
+        function resetUI() {
+            // Reset lights
+            lightsRed.forEach(el => el.className = 'light w-12 h-12 md:w-24 md:h-24');
+            lightGreen.className = 'light hidden w-24 h-24 md:w-32 md:h-32';
+            
+            // Reset timers
+            const defaultTime = '0.000<span class="text-xl">s</span>';
+            const clearedTime = '--.---<span class="text-xl">s</span>';
+            currentLap1.innerHTML = defaultTime;
+            currentLap2.innerHTML = defaultTime;
+            lastLap1.innerHTML = clearedTime;
+            lastLap2.innerHTML = clearedTime;
+            
+            // Reset state
+            jsLapStartTime_1 = 0;
+            jsLapStartTime_2 = 0;
+            stopTimerLoop();
+            
+            startButton.disabled = false;
+        }
+
+        // --- Event Listeners ---
+        startButton.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('start');
+                startButton.disabled = true; // Prevent multiple starts
+            }
+        };
+
+        // --- Initial connect ---
+        connectWebSocket();
+
+    </script>
+</body>
+</html>
