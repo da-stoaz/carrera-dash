@@ -8,7 +8,7 @@ import aiomqtt  # Async-friendly MQTT client
 
 # --- CONFIGURATION ---
 # !! IMPORTANT: Change these values to match your setup !!
-BROKER_ADDRESS = "localhost"  # Or "192.168.1.100", "localhost", etc.
+BROKER_ADDRESS = "192.168.1.144"  # Or "192.168.1.100", "localhost", etc.
 TOPIC_RACE_START = "carrera/race/start"
 TOPIC_TRACK1_FINISH = "carrera/track1/finish"
 TOPIC_TRACK2_FINISH = "carrera/track2/finish"
