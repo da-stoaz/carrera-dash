@@ -76,9 +76,7 @@
                     <div id="light-5" class="light w-12 h-12 md:w-24 md:h-24"></div>
                 </div>
                 <!-- Green Light (hidden until GO) -->
-                <div class="max-w-xs mx-auto mt-8">
-                     <div id="light-green" class="light hidden w-24 h-24 md:w-32 md:h-32"></div>
-                </div>
+                <!-- REMOVED: The separate green light div is gone. -->
             </div>
 
             <!-- Bottom Section: Timers & Control -->
@@ -197,7 +195,7 @@
             document.getElementById('light-4'),
             document.getElementById('light-5'),
         ];
-        const lightGreen = document.getElementById('light-green');
+        // REMOVED: const lightGreen
         
         // Timers
         const lastLap1 = document.getElementById('last-lap-1');
@@ -296,8 +294,12 @@
                         break;
                         
                     case 'lights_out':
-                        lightsRed.forEach(el => el.className = 'light w-12 h-12 md:w-24 md:h-24'); // All red off
-                        lightGreen.className = 'light green-on w-24 h-24 md:w-32 md:h-32'; // Green on
+                        // MODIFIED: Turn lights 1-4 off
+                        for (let i = 0; i < 4; i++) {
+                            lightsRed[i].className = 'light w-12 h-12 md:w-24 md:h-24';
+                        }
+                        // MODIFIED: Turn the 5th light green
+                        lightsRed[4].className = 'light green-on w-12 h-12 md:w-24 md:h-24';
                         break;
                         
                     case 'start_race':
@@ -371,7 +373,7 @@
             
             // Reset lights
             lightsRed.forEach(el => el.className = 'light w-12 h-12 md:w-24 md:h-24');
-            lightGreen.className = 'light hidden w-24 h-24 md:w-32 md:h-32';
+            // REMOVED: lightGreen.className = ...
             
             // Reset timers
             const defaultTime = '0.000<span class="text-xl">s</span>';
