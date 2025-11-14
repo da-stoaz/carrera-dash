@@ -16,14 +16,25 @@ TOPIC_TRACK2_FINISH = "carrera/track2/finish"
 
 app = FastAPI()
 
-# --- Lap Timing State ---
-# We store the start time of the *current lap* for each track.
-# This is a simple global state for this app.
-track_lap_start_times = {
-    1: 0.0,
-    2: 0.0
+# --- Global Race State ---
+# This dictionary will hold all our race information
+race_data = {
+    "status": "idle", # "idle", "running", "finished"
+    "tracks": {
+        1: {"lap_start_time": 0.0, "laps": []}, # List of lap times in seconds
+        2: {"lap_start_time": 0.0, "laps": []}
+    }
 }
-# ---
+
+def reset_race_state():
+    """Helper function to reset the global race state."""
+    global race_data
+    race_data["status"] = "idle"
+    race_data["tracks"][1]["lap_start_time"] = 0.0
+    race_data["tracks"][1]["laps"] = []
+    race_data["tracks"][2]["lap_start_time"] = 0.0
+    race_data["tracks"][2]["laps"] = []
+    print("Race state has been reset.")
 
 # Read the HTML file from disk
 try:
@@ -42,13 +53,13 @@ async def get_root():
 
 async def race_sequence(websocket: WebSocket, client: aiomqtt.Client):
     """
-    Handles the F1 start light sequence and race timing.
+    Handles the F1 start light sequence.
+    This assumes the state has already been set to "running".
     """
-    global track_lap_start_times
+    global race_data
     try:
-        # 1. Reset the frontend UI
+        # 1. Frontend UI is already reset by the "start" command.
         print("Starting new race sequence...")
-        await websocket.send_json({"type": "reset"})
         
         # 2. Turn on the 5 red lights, one by one
         for i in range(1, 6):
@@ -65,13 +76,13 @@ async def race_sequence(websocket: WebSocket, client: aiomqtt.Client):
         
         # 5. Send MQTT "start" signal and record start time for Lap 1
         start_time = time.monotonic()
-        track_lap_start_times[1] = start_time
-        track_lap_start_times[2] = start_time
+        race_data["tracks"][1]["lap_start_time"] = start_time
+        race_data["tracks"][2]["lap_start_time"] = start_time
         
         await client.publish(TOPIC_RACE_START, "GO")
         
         # 6. Tell frontend to start its own timers
-        await websocket.send_json({"type": "start_race"})
+        await websocket.send_json({"type": "start_race"}) # This now *only* starts the timers
         print(f"Race started. Lap 1 start time: {start_time}")
 
     except Exception as e:
@@ -82,13 +93,17 @@ async def mqtt_listener(websocket: WebSocket, client: aiomqtt.Client):
     Listens for incoming MQTT messages from the light gates.
     Calculates lap times and sends them to the frontend.
     """
-    global track_lap_start_times
+    global race_data
     print(f"Subscribing to {TOPIC_TRACK1_FINISH} and {TOPIC_TRACK2_FINISH}")
     await client.subscribe(TOPIC_TRACK1_FINISH)
     await client.subscribe(TOPIC_TRACK2_FINISH)
     
     try:
         async for message in client.messages:
+            # Only process if the race is running
+            if race_data["status"] != "running":
+                continue # Ignore messages if race isn't active
+
             finish_time = time.monotonic()
             track = 0
             
@@ -98,26 +113,61 @@ async def mqtt_listener(websocket: WebSocket, client: aiomqtt.Client):
                 track = 2
             
             if track > 0:
-                # Check if race has started (start time is not 0)
-                if track_lap_start_times[track] > 0:
-                    # Calculate lap time
-                    lap_time_sec = finish_time - track_lap_start_times[track]
-                    
-                    # Set the start time for the *next* lap
-                    track_lap_start_times[track] = finish_time
-                    
-                    # Send the completed lap time to the frontend
-                    print(f"Track {track} finished lap. Time: {lap_time_sec:.3f}s")
-                    await websocket.send_json({
-                        "type": "lap_finish", 
-                        "track": track, 
-                        "lap_time_sec": lap_time_sec
-                    })
-                else:
-                    print(f"Ignoring message on track {track}: race not started.")
+                # Check if lap has started (start time is not 0)
+                if race_data["tracks"][track]["lap_start_time"] == 0:
+                    print(f"Ignoring message on track {track}: lap not started.")
+                    continue
+
+                # Calculate lap time
+                lap_time_sec = finish_time - race_data["tracks"][track]["lap_start_time"]
+                
+                # Add to lap list
+                race_data["tracks"][track]["laps"].append(lap_time_sec)
+                
+                # Set the start time for the *next* lap
+                race_data["tracks"][track]["lap_start_time"] = finish_time
+                
+                # Send the completed lap time to the frontend
+                print(f"Track {track} finished lap. Time: {lap_time_sec:.3f}s")
+                await websocket.send_json({
+                    "type": "lap_finish", 
+                    "track": track, 
+                    "lap_time_sec": lap_time_sec
+                    # Frontend will use this to update "Last Lap" and "Live History"
+                })
                 
     except Exception as e:
         print(f"MQTT listener error: {e}")
+
+async def stop_race(websocket: WebSocket):
+    """
+    Stops the race, calculates final stats, and sends to frontend.
+    """
+    global race_data
+    if race_data["status"] != "running":
+        print("Ignoring stop request: race not running.")
+        return # Can't stop a race that isn't running
+
+    print("Stopping race...")
+    race_data["status"] = "finished"
+    race_data["tracks"][1]["lap_start_time"] = 0.0
+    race_data["tracks"][2]["lap_start_time"] = 0.0
+    
+    # Calculate stats
+    laps_1 = race_data["tracks"][1]["laps"]
+    laps_2 = race_data["tracks"][2]["laps"]
+    
+    fastest_1 = min(laps_1) if laps_1 else 0
+    fastest_2 = min(laps_2) if laps_2 else 0
+
+    await websocket.send_json({
+        "type": "race_finished",
+        "track_1_laps": laps_1,
+        "track_2_laps": laps_2,
+        "track_1_fastest": fastest_1,
+        "track_2_fastest": fastest_2
+    })
+    print("Race finished. Final data sent to frontend.")
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -134,11 +184,27 @@ async def websocket_endpoint(websocket: WebSocket):
             listener_task = asyncio.create_task(mqtt_listener(websocket, client))
             
             # Wait for messages from the browser
-            # FIX: Use .iter_text() which is an async iterator
             async for data in websocket.iter_text():
                 if data == "start":
-                    # Start the race sequence
+                    if race_data["status"] == "running":
+                        continue # Don't start a race that's already running
+                    
+                    # Reset state *before* starting
+                    reset_race_state()
+                    race_data["status"] = "running"
+                    
+                    # Tell frontend to reset its UI
+                    await websocket.send_json({"type": "reset"})
+                    
+                    # Start the light sequence
                     asyncio.create_task(race_sequence(websocket, client))
+                
+                elif data == "stop":
+                    await stop_race(websocket)
+                
+                elif data == "reset":
+                    reset_race_state()
+                    await websocket.send_json({"type": "reset"})
                 
     except WebSocketDisconnect:
         print("Client disconnected from WebSocket.")

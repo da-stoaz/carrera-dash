@@ -22,7 +22,6 @@
             background-color: #1a1a1a; /* Dark, unlit bulb */
             border: 4px solid #333;
             transition: all 0.2s ease-in-out;
-            /* FIX: Use rounded-full for perfect circles */
             border-radius: 9999px; 
         }
         
@@ -38,6 +37,14 @@
             border-color: #86efac; /* green-300 */
             box-shadow: 0 0 20px #22c55e;
             animation: pulse-green 1.5s infinite;
+        }
+        /* Hide scrollbar for lap history */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
     </style>
 </head>
@@ -56,14 +63,11 @@
         </div>
 
         <!-- Main Dashboard: 16:9 Aspect Ratio Container -->
-        <!-- FIX: Added flex-grow to this container to make it fill the remaining space -->
         <div class="aspect-[16/9] w-full bg-gray-800 rounded-lg shadow-2xl p-6 md:p-8 flex flex-col justify-between flex-grow">
             
             <!-- Top Section: Lights -->
-            <!-- FIX: Removed 'flex-grow' from this div. This was the bug pushing the button off-screen. -->
             <div>
                 <!-- Start Lights -->
-                <!-- FIX: Gave lights explicit, responsive w/h and rounded-full -->
                 <div class="max-w-2xl mx-auto flex justify-center gap-4 md:gap-8">
                     <div id="light-1" class="light w-12 h-12 md:w-24 md:h-24"></div>
                     <div id="light-2" class="light w-12 h-12 md:w-24 md:h-24"></div>
@@ -83,59 +87,109 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-8">
                     
                     <!-- Track 1 Timer -->
-                    <div class="bg-gray-900 p-6 rounded-lg text-center shadow-inner">
-                        <h2 class="text-xl md:text-3xl font-semibold text-blue-300 mb-4">Track 1</h2>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-inner flex flex-col">
+                        <h2 class="text-xl md:text-3xl font-semibold text-blue-300 mb-4 text-center">Track 1</h2>
                         <div class="grid grid-cols-2 gap-4">
+                            <!-- Current Timers -->
                             <div>
                                 <h3 class="text-lg md:text-xl text-gray-400">Last Lap</h3>
                                 <div id="last-lap-1" class="text-2xl md:text-4xl font-mono font-bold text-blue-100/70">
                                     --.---<span class="text-xl">s</span>
                                 </div>
-                            </div>
-                            <div>
-                                <h3 class="text-lg md:text-xl text-gray-400">Current Lap</h3>
+                                <h3 class="text-lg md:text-xl text-gray-400 mt-2">Current Lap</h3>
                                 <div id="current-lap-1" class="text-2xl md:text-4xl font-mono font-bold text-blue-100">
                                     0.000<span class="text-xl">s</span>
                                 </div>
+                            </div>
+                            <!-- Live Lap History -->
+                            <div class="border-l border-gray-700 pl-4">
+                                <h3 class="text-lg md:text-xl text-gray-400">Recent Laps</h3>
+                                <ol id="history-1" class="list-decimal list-inside text-lg md:text-2xl font-mono text-gray-300">
+                                    <!-- JS will populate this -->
+                                </ol>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Track 2 Timer -->
-                    <div class="bg-gray-900 p-6 rounded-lg text-center shadow-inner">
-                        <h2 class="text-xl md:text-3xl font-semibold text-green-300 mb-4">Track 2</h2>
+                    <div class="bg-gray-900 p-6 rounded-lg shadow-inner flex flex-col">
+                        <h2 class="text-xl md:text-3xl font-semibold text-green-300 mb-4 text-center">Track 2</h2>
                         <div class="grid grid-cols-2 gap-4">
+                            <!-- Current Timers -->
                             <div>
                                 <h3 class="text-lg md:text-xl text-gray-400">Last Lap</h3>
                                 <div id="last-lap-2" class="text-2xl md:text-4xl font-mono font-bold text-green-100/70">
                                     --.---<span class="text-xl">s</span>
                                 </div>
-                            </div>
-                            <div>
-                                <h3 class="text-lg md:text-xl text-gray-400">Current Lap</h3>
+                                <h3 class="text-lg md:text-xl text-gray-400 mt-2">Current Lap</h3>
                                 <div id="current-lap-2" class="text-2xl md:text-4xl font-mono font-bold text-green-100">
                                     0.000<span class="text-xl">s</span>
                                 </div>
+                            </div>
+                            <!-- Live Lap History -->
+                            <div class="border-l border-gray-700 pl-4">
+                                <h3 class="text-lg md:text-xl text-gray-400">Recent Laps</h3>
+                                <ol id="history-2" class="list-decimal list-inside text-lg md:text-2xl font-mono text-gray-300">
+                                    <!-- JS will populate this -->
+                                </ol>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Control Button -->
-                <div class="text-center">
-                    <button id="start-button" class="bg-red-600 hover:bg-red-500 disabled:bg-gray-500 text-white font-bold py-4 px-10 text-2xl rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                <!-- Control Buttons -->
+                <div class="text-center h-16"> <!-- Added fixed height to prevent layout shift -->
+                    <button id="start-button" class="bg-green-600 hover:bg-green-500 disabled:bg-gray-500 text-white font-bold py-4 px-10 text-2xl rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
                         START RACE
+                    </button>
+                    <button id="stop-button" class="hidden bg-red-600 hover:bg-red-500 text-white font-bold py-4 px-10 text-2xl rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                        STOP RACE
+                    </button>
+                    <button id="new-race-button" class="hidden bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 text-2xl rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                        NEW RACE
                     </button>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Race Summary Modal -->
+    <div id="summary-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+        <div class="bg-gray-800 text-gray-100 rounded-lg shadow-2xl max-w-4xl w-full max-h-[80svh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-700">
+                <h2 class="text-3xl font-bold">Race Summary</h2>
+                <button id="close-modal-button" class="text-gray-400 hover:text-white text-3xl">&times;</button>
+            </div>
+            <!-- Modal Body -->
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto no-scrollbar">
+                <!-- Track 1 Summary -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-blue-300 mb-3">Track 1</h3>
+                    <div id="summary-track-1-laps" class="bg-gray-900 rounded-lg p-4 h-64 overflow-y-auto no-scrollbar">
+                        <!-- JS will populate laps -->
+                    </div>
+                </div>
+                <!-- Track 2 Summary -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-green-300 mb-3">Track 2</h3>
+                    <div id="summary-track-2-laps" class="bg-gray-900 rounded-lg p-4 h-64 overflow-y-auto no-scrollbar">
+                        <!-- JS will populate laps -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <script>
         // --- DOM Elements ---
         const statusLight = document.getElementById('status-light');
         const statusText = document.getElementById('status-text');
         const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const newRaceButton = document.getElementById('new-race-button');
+        
         const lightsRed = [
             document.getElementById('light-1'),
             document.getElementById('light-2'),
@@ -148,37 +202,46 @@
         // Timers
         const lastLap1 = document.getElementById('last-lap-1');
         const currentLap1 = document.getElementById('current-lap-1');
+        const history1 = document.getElementById('history-1');
         const lastLap2 = document.getElementById('last-lap-2');
         const currentLap2 = document.getElementById('current-lap-2');
+        const history2 = document.getElementById('history-2');
+        
+        // Modal
+        const summaryModal = document.getElementById('summary-modal');
+        const closeModalButton = document.getElementById('close-modal-button');
+        const summaryLaps1 = document.getElementById('summary-track-1-laps');
+        const summaryLaps2 = document.getElementById('summary-track-2-laps');
         
         // --- State ---
         let ws;
+        let raceStatus = "idle"; // "idle", "running", "finished"
         let jsLapStartTime_1 = 0;
         let jsLapStartTime_2 = 0;
         let animationFrameId = null;
 
         // --- Helper Functions ---
-        function formatTime(milliseconds) {
+        function formatTime(milliseconds, showUnit = true) {
             const totalSeconds = milliseconds / 1000;
-            return `${totalSeconds.toFixed(3)}<span class="text-xl">s</span>`;
+            if (showUnit) {
+                return `${totalSeconds.toFixed(3)}<span class="text-xl">s</span>`;
+            }
+            return totalSeconds.toFixed(3);
         }
 
         // --- Live Timer Loop ---
         function updateTimers() {
             const now = performance.now();
             
-            // Update Track 1
-            if (jsLapStartTime_1 > 0) {
-                const elapsed = now - jsLapStartTime_1;
-                currentLap1.innerHTML = formatTime(elapsed);
-            }
-            // Update Track 2
-            if (jsLapStartTime_2 > 0) {
-                const elapsed = now - jsLapStartTime_2;
-                currentLap2.innerHTML = formatTime(elapsed);
+            if (raceStatus === "running") {
+                if (jsLapStartTime_1 > 0) {
+                    currentLap1.innerHTML = formatTime(now - jsLapStartTime_1);
+                }
+                if (jsLapStartTime_2 > 0) {
+                    currentLap2.innerHTML = formatTime(now - jsLapStartTime_2);
+                }
             }
             
-            // Continue the loop
             animationFrameId = requestAnimationFrame(updateTimers);
         }
 
@@ -219,6 +282,7 @@
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 console.log('Received:', data);
+                const now = performance.now();
 
                 switch (data.type) {
                     case 'reset':
@@ -237,31 +301,60 @@
                         break;
                         
                     case 'start_race':
-                        // Backend has started its clock. We start our visual clock.
-                        const now = performance.now();
+                        raceStatus = "running";
                         jsLapStartTime_1 = now;
                         jsLapStartTime_2 = now;
-                        
-                        // Clear old lap times
-                        lastLap1.innerHTML = '--.---<span class="text-xl">s</span>';
-                        lastLap2.innerHTML = '--.---<span class="text-xl">s</span>';
                         
                         // Start the animation loop
                         stopTimerLoop(); // Stop any previous loop
                         updateTimers();
+                        
+                        // Update button visibility
+                        startButton.classList.add('hidden');
+                        stopButton.classList.remove('hidden');
+                        newRaceButton.classList.add('hidden');
                         break;
                         
                     case 'lap_finish':
-                        // Backend sends the authoritative lap time
                         const formattedTime = formatTime(data.lap_time_sec * 1000);
+                        const shortTime = formatTime(data.lap_time_sec * 1000, false);
                         
                         if (data.track === 1) {
                             lastLap1.innerHTML = formattedTime;
-                            jsLapStartTime_1 = performance.now(); // Reset for next lap
+                            jsLapStartTime_1 = now; // Reset for next lap
+                            // Add to live history
+                            const li = document.createElement('li');
+                            li.innerText = shortTime;
+                            history1.prepend(li);
+                            if (history1.children.length > 3) {
+                                history1.removeChild(history1.lastChild);
+                            }
                         } else if (data.track === 2) {
                             lastLap2.innerHTML = formattedTime;
-                            jsLapStartTime_2 = performance.now(); // Reset for next lap
+                            jsLapStartTime_2 = now; // Reset for next lap
+                            // Add to live history
+                            const li = document.createElement('li');
+                            li.innerText = shortTime;
+                            history2.prepend(li);
+                            if (history2.children.length > 3) {
+                                history2.removeChild(history2.lastChild);
+                            }
                         }
+                        break;
+                    
+                    case 'race_finished':
+                        raceStatus = "finished";
+                        stopTimerLoop();
+                        jsLapStartTime_1 = 0;
+                        jsLapStartTime_2 = 0;
+                        
+                        // Update button visibility
+                        startButton.classList.add('hidden');
+                        stopButton.classList.add('hidden');
+                        newRaceButton.classList.remove('hidden');
+
+                        // Show summary
+                        showRaceSummary(data);
                         break;
 
                     case 'status':
@@ -273,6 +366,9 @@
         }
         
         function resetUI() {
+            console.log("Resetting UI");
+            raceStatus = "idle";
+            
             // Reset lights
             lightsRed.forEach(el => el.className = 'light w-12 h-12 md:w-24 md:h-24');
             lightGreen.className = 'light hidden w-24 h-24 md:w-32 md:h-32';
@@ -285,12 +381,62 @@
             lastLap1.innerHTML = clearedTime;
             lastLap2.innerHTML = clearedTime;
             
+            // Clear history
+            history1.innerHTML = "";
+            history2.innerHTML = "";
+            
             // Reset state
             jsLapStartTime_1 = 0;
             jsLapStartTime_2 = 0;
             stopTimerLoop();
             
+            // Reset buttons
             startButton.disabled = false;
+            startButton.classList.remove('hidden');
+            stopButton.classList.add('hidden');
+            newRaceButton.classList.add('hidden');
+            
+            // Hide modal
+            summaryModal.classList.add('hidden');
+        }
+
+        function showRaceSummary(data) {
+            // Clear old summary data
+            summaryLaps1.innerHTML = "";
+            summaryLaps2.innerHTML = "";
+
+            // Build Track 1 List
+            const ol1 = document.createElement('ol');
+            ol1.className = "list-decimal list-inside font-mono text-lg space-y-1";
+            data.track_1_laps.forEach((lapTime, index) => {
+                const li = document.createElement('li');
+                let timeStr = lapTime.toFixed(3);
+                li.innerText = timeStr;
+                if (lapTime === data.track_1_fastest) {
+                    li.className = "text-blue-300 font-bold";
+                    li.innerText += " (Fastest)";
+                }
+                ol1.appendChild(li);
+            });
+            summaryLaps1.appendChild(ol1);
+
+            // Build Track 2 List
+            const ol2 = document.createElement('ol');
+            ol2.className = "list-decimal list-inside font-mono text-lg space-y-1";
+            data.track_2_laps.forEach((lapTime, index) => {
+                const li = document.createElement('li');
+                let timeStr = lapTime.toFixed(3);
+                li.innerText = timeStr;
+                if (lapTime === data.track_2_fastest) {
+                    li.className = "text-green-300 font-bold";
+                    li.innerText += " (Fastest)";
+                }
+                ol2.appendChild(li);
+            });
+            summaryLaps2.appendChild(ol2);
+
+            // Show the modal
+            summaryModal.classList.remove('hidden');
         }
 
         // --- Event Listeners ---
@@ -299,6 +445,22 @@
                 ws.send('start');
                 startButton.disabled = true; // Prevent multiple starts
             }
+        };
+        
+        stopButton.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('stop');
+            }
+        };
+        
+        newRaceButton.onclick = () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send('reset');
+            }
+        };
+        
+        closeModalButton.onclick = () => {
+            summaryModal.classList.add('hidden');
         };
 
         // --- Initial connect ---
