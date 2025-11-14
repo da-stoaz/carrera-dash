@@ -1,40 +1,32 @@
 import paho.mqtt.client as mqtt
-from gpiozero import Button  # Button eignet sich perfekt für digitale 2-Zustand-Sensoren
+from gpiozero import Button
 from signal import pause
 import time
 
 # --- Konfiguration ---
-MQTT_BROKER = "localhost"  # Dein Pi ist jetzt der Broker
+MQTT_BROKER = "localhost"
 MQTT_PORT = 1883
-MQTT_TOPIC = "sensor/hall" # Das Thema, unter dem die Nachricht gesendet wird
 
-SENSOR_PIN = 17 # Der GPIO-Pin, den wir in Schritt 1 verbunden haben
+# Sensor 1 (Schiene 1)
+SENSOR_PIN_1 = 17 # GPIO 17
+MQTT_TOPIC_1 = "sensor/schiene_1" # Eindeutiges Topic für Sensor 1
+
+# Sensor 2 (Schiene 2) - NEU
+SENSOR_PIN_2 = 27 # GPIO 27
+MQTT_TOPIC_2 = "sensor/schiene_2" # Eindeutiges Topic für Sensor 2
 # --- Ende Konfiguration ---
 
-# Wir verwenden 'Button' von gpiozero. 
-# 'pull_up=True' bedeutet, dass der Pin intern auf HIGH gezogen wird.
-# Die meisten Hallsensoren ziehen den Pin auf LOW, wenn ein Magnet erkannt wird.
-# Dies wird als "drücken" (pressed) interpretiert.
-hall_sensor = Button(SENSOR_PIN, pull_up=True)
+# Initialisiere beide Sensoren
+hall_sensor_1 = Button(SENSOR_PIN_1, pull_up=True)
+hall_sensor_2 = Button(SENSOR_PIN_2, pull_up=True) # NEU
 
-# Funktion, die aufgerufen wird, wenn der MQTT-Client sich verbindet
+# --- MQTT-Setup ---
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print("Erfolgreich mit MQTT-Broker verbunden.")
     else:
         print(f"Verbindung fehlgeschlagen mit Code: {rc}")
 
-# Funktion, die aufgerufen wird, wenn ein Magnet erkannt wird
-def magnet_erkannt():
-    print("Magnet erkannt! Sende MQTT-Nachricht...")
-    client.publish(MQTT_TOPIC, "MAGNET_ERKANNT")
-
-# Funktion, die aufgerufen wird, wenn der Magnet entfernt wird
-def magnet_entfernt():
-    print("Kein Magnet. Sende MQTT-Nachricht...")
-    client.publish(MQTT_TOPIC, "KEIN_MAGNET")
-
-# --- MQTT-Setup ---
 client = mqtt.Client()
 client.on_connect = on_connect
 
@@ -44,21 +36,40 @@ except ConnectionRefusedError:
     print("Verbindung zum MQTT-Broker fehlgeschlagen. Läuft der Mosquitto-Dienst?")
     exit()
 
-# Starte den MQTT-Client-Loop in einem eigenen Thread
 client.loop_start()
 
+# --- Callback-Funktionen für Sensor 1 ---
+def magnet_1_erkannt():
+    print("Schiene 1: Magnet erkannt! Sende MQTT...")
+    client.publish(MQTT_TOPIC_1, "MAGNET_ERKANNT")
+
+def magnet_1_entfernt():
+    print("Schiene 1: Kein Magnet. (log)")
+    #client.publish(MQTT_TOPIC_1, "KEIN_MAGNET")
+
+# --- Callback-Funktionen für Sensor 2 (NEU) ---
+def magnet_2_erkannt():
+    print("Schiene 2: Magnet erkannt! Sende MQTT...")
+    client.publish(MQTT_TOPIC_2, "MAGNET_ERKANNT") # Sendet auf Topic 2
+
+def magnet_2_entfernt():
+    print("Schiene 2: Kein Magnet. (log)")
+    #client.publish(MQTT_TOPIC_2, "KEIN_MAGNET") # Sendet auf Topic 2
+
+
 # --- Sensor-Ereignisse zuweisen ---
-# Weise die Funktionen den Ereignissen des Sensors zu
-# 'when_pressed' wird ausgelöst, wenn der Sensor-Pin auf LOW geht (Magnet da)
-hall_sensor.when_pressed = magnet_erkannt
+# Sensor 1
+hall_sensor_1.when_pressed = magnet_1_erkannt
+hall_sensor_1.when_released = magnet_1_entfernt
 
-# 'when_released' wird ausgelöst, wenn der Sensor-Pin auf HIGH geht (Magnet weg)
-hall_sensor.when_released = magnet_entfernt
+# Sensor 2 (NEU)
+hall_sensor_2.when_pressed = magnet_2_erkannt
+hall_sensor_2.when_released = magnet_2_entfernt
 
-print(f"Hallsensor-Überwachung auf GPIO {SENSOR_PIN} gestartet.")
-print("Warte auf Magnet...")
+print(f"Überwachung für Schiene 1 (GPIO {SENSOR_PIN_1}) und Schiene 2 (GPIO {SENSOR_PIN_2}) gestartet.")
+print("Warte auf Magnete...")
 
-# Das Skript am Laufen halten, um auf Ereignisse zu warten
+# Das Skript am Laufen halten
 try:
     pause()
 except KeyboardInterrupt:
